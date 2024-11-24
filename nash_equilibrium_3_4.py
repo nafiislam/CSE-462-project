@@ -53,6 +53,10 @@ def nash_eq_three_four_approx(payoff_matrix_p1, payoff_matrix_p2):
     return player_1_strategy, player_2_strategy
 
 
+def round_to_6_decimal_places(value):
+    return round(value, 6)
+
+
 df = load_dataset()
 # print(df["Player 1 Strategy"].iloc[0])
 # print(df["Player 2 Strategy"].iloc[0])
@@ -78,6 +82,13 @@ with open("nash_results.csv", 'w') as f:
         expected_payoff_p2_real = calculate_expected_payoff(df["Payoff Matrix P2"].iloc[i], df["Player 1 Strategy"].iloc[i], df["Player 2 Strategy"].iloc[i])
         epsilon_p1 =  expected_payoff_p1_real - expected_payoff_p1_approx
         epsilon_p2 =  expected_payoff_p2_real - expected_payoff_p2_approx
+
+        expected_payoff_p1_approx = round_to_6_decimal_places(expected_payoff_p1_approx)
+        expected_payoff_p1_real = round_to_6_decimal_places(expected_payoff_p1_real)
+        epsilon_p1 = round_to_6_decimal_places(epsilon_p1)
+        expected_payoff_p2_approx = round_to_6_decimal_places(expected_payoff_p2_approx)
+        expected_payoff_p2_real = round_to_6_decimal_places(expected_payoff_p2_real)
+        epsilon_p2 = round_to_6_decimal_places(epsilon_p2)
 
         if epsilon_p1>0.75 or epsilon_p2>0.75:
             print(f"Game ID: {df['Game ID'].iloc[i]} performed contradictorily")
