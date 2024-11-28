@@ -3,6 +3,7 @@ import pandas as pd
 import warnings
 import random
 import ast
+import utilty
 
 
 np.random.seed(42)
@@ -75,11 +76,31 @@ with open("nash_results.csv", 'w') as f:
     f.write("Game ID, Expected payoff of player1 from approx, Expected payoff of player1 real, epsilon player1, Expected payoff of player2 from approx, Expected payoff of player2 real, epsilon player2, player_1_strategy, player_2_strategy\n")
 
     for i in range(df.shape[0]):
+        print(f"Processing Game ID: {df['Game ID'].iloc[i]}")
         player_1_strategy, player_2_strategy = nash_eq_three_four_approx(df["Payoff Matrix P1"].iloc[i], df["Payoff Matrix P2"].iloc[i])
+
+        player_1_matrix = np.dot(df["Payoff Matrix P1"].iloc[i], player_2_strategy)
+
+        combinations = utilty.generate_combinations(len(player_1_strategy))
+        max_payoff_player_1 = -1
+        for combination in combinations:
+            strategy = utilty.solve_equation(combination, player_1_matrix)
+            if calculate_expected_payoff(df["Payoff Matrix P1"].iloc[i], strategy, player_2_strategy) > max_payoff_player_1:
+                max_payoff_player_1 = calculate_expected_payoff(df["Payoff Matrix P1"].iloc[i], strategy, player_2_strategy)
+        
+        player_2_matrix = np.dot(np.array(df["Payoff Matrix P2"].iloc[i]).T, player_1_strategy)
+
+        combinations = utilty.generate_combinations(len(player_2_strategy))
+        max_payoff_player_2 = -1
+        for combination in combinations:
+            strategy = utilty.solve_equation(combination, player_2_matrix)
+            if calculate_expected_payoff(df["Payoff Matrix P2"].iloc[i], player_1_strategy, strategy) > max_payoff_player_2:
+                max_payoff_player_2 = calculate_expected_payoff(df["Payoff Matrix P2"].iloc[i], player_1_strategy, strategy)
+            
         expected_payoff_p1_approx = calculate_expected_payoff(df["Payoff Matrix P1"].iloc[i], player_1_strategy, player_2_strategy)
-        expected_payoff_p1_real = calculate_expected_payoff(df["Payoff Matrix P1"].iloc[i], df["Player 1 Strategy"].iloc[i], df["Player 2 Strategy"].iloc[i])
+        expected_payoff_p1_real = max_payoff_player_1
         expected_payoff_p2_approx = calculate_expected_payoff(df["Payoff Matrix P2"].iloc[i], player_1_strategy, player_2_strategy)
-        expected_payoff_p2_real = calculate_expected_payoff(df["Payoff Matrix P2"].iloc[i], df["Player 1 Strategy"].iloc[i], df["Player 2 Strategy"].iloc[i])
+        expected_payoff_p2_real = max_payoff_player_2
         epsilon_p1 =  expected_payoff_p1_real - expected_payoff_p1_approx
         epsilon_p2 =  expected_payoff_p2_real - expected_payoff_p2_approx
 
