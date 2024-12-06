@@ -16,5 +16,5 @@ def load_dataset():
     dataframe["player_2_strategy"] = dataframe["player_2_strategy"].apply(ast.literal_eval)
     return dataframe
 
-df = pd.read_csv('nash_results.csv')
+df = load_dataset()
 print(df.head())
