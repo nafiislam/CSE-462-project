@@ -28,19 +28,19 @@ df = load_dataset_1()
 epsilon_player_one = df["epsilon player1"].values
 epsilon_player_two = df["epsilon player2"].values
 
-# plot epsilon values with respect to the number of iterations
+# plot epsilon values with respect to the number of game_ids
 plt.figure()
 plt.plot(epsilon_player_one)
-plt.xlabel("Iterations")
+plt.xlabel("Game_ids")
 plt.ylabel("Epsilon")
-plt.title("Epsilon values of player 1 with respect to the number of iterations")
+plt.title("Epsilon values of player 1 with respect to game_ids")
 plt.show()
 
 plt.figure()
 plt.plot(epsilon_player_two)
-plt.xlabel("Iterations")
+plt.xlabel("Game_ids")
 plt.ylabel("Epsilon")
-plt.title("Epsilon values of player 2 with respect to the number of iterations")
+plt.title("Epsilon values of player 2 with respect to game_ids")
 plt.show()
 
 
@@ -49,17 +49,17 @@ df = load_dataset_2()
 epsilon_player_one = df["epsilon player1"].values
 epsilon_player_two = df["epsilon player2"].values
 
-# plot epsilon values with respect to the number of iterations
+# plot epsilon values with respect to the number of game_ids
 plt.figure()
 plt.plot(epsilon_player_one)
-plt.xlabel("Iterations")
+plt.xlabel("Game_ids")
 plt.ylabel("Epsilon")
-plt.title("Epsilon values of player 1 with respect to the number of iterations")
+plt.title("Epsilon values of player 1 with respect to game_ids")
 plt.show()
 
 plt.figure()
 plt.plot(epsilon_player_two)
-plt.xlabel("Iterations")
+plt.xlabel("Game_ids")
 plt.ylabel("Epsilon")
-plt.title("Epsilon values of player 2 with respect to the number of iterations")
+plt.title("Epsilon values of player 2 with respect to game_ids")
 plt.show()
