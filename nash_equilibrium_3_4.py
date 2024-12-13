@@ -6,7 +6,8 @@ import ast
 import time
 import sys
 from tqdm import tqdm
-
+import gc
+import io
 
 np.random.seed(42)
 random.seed(42)
@@ -62,7 +63,6 @@ def round_to_6_decimal_places(value):
 
 
 if __name__ == "__main__":    
-
     if len(sys.argv) != 3:
         print("Usage: python nash_equilibrium_3_4.py <dataset_path> <output_path>")
         sys.exit(1)
@@ -70,36 +70,75 @@ if __name__ == "__main__":
     dataset_path = sys.argv[1]
     output_path = sys.argv[2]
 
-    df = load_dataset(dataset_path)
+    # Create an empty DataFrame to store results temporarily
+    result_columns = [
+        "Game_ID", "Expected_payoff_of_player1_from_approx", "epsilon_player1",
+        "Expected_payoff_of_player2_from_approx", "epsilon_player2",
+        "player_1_strategy", "player_2_strategy", "time"
+    ]
+    results_df = pd.DataFrame(columns=result_columns)
 
-    with open(output_path, 'w') as f:
-        f.write("Game_ID,Expected_payoff_of_player1_from_approx,epsilon_player1,Expected_payoff_of_player2_from_approx,epsilon_player2,player_1_strategy,player_2_strategy,time\n")
+    # Open dataset and process row by row
+    with open(dataset_path, 'r') as csv_file:
+        total_rows = sum(1 for _ in csv_file) - 1  # Count rows excluding header
 
-        for i in range(df.shape[0]):
-            print(f"Processing Game ID: {df['Game ID'].iloc[i]}")
+    with open(dataset_path, 'r') as csv_file:
+        # Skip header
+        header = csv_file.readline()
+
+        # Process each row with a progress bar
+        for line in tqdm(csv_file, total=total_rows, desc="Processing Games"):
+            # Load a single row
+            row = pd.read_csv(io.StringIO(header + line), converters={
+                "Payoff Matrix P1": ast.literal_eval,
+                "Payoff Matrix P2": ast.literal_eval
+            })
+
+
+            game_id = row['Game ID'].iloc[0]
+            payoff_matrix_p1 = row["Payoff Matrix P1"].iloc[0]
+            payoff_matrix_p2 = row["Payoff Matrix P2"].iloc[0]
+
+            # Process Nash equilibrium approximation
             start_time = time.time()
-            player_1_strategy, player_2_strategy = nash_eq_three_four_approx(df["Payoff Matrix P1"].iloc[i], df["Payoff Matrix P2"].iloc[i])
+            player_1_strategy, player_2_strategy = nash_eq_three_four_approx(payoff_matrix_p1, payoff_matrix_p2)
             time_taken = time.time() - start_time
 
-            player_1_matrix = np.dot(df["Payoff Matrix P1"].iloc[i], player_2_strategy)
-
+            player_1_matrix = np.dot(payoff_matrix_p1, player_2_strategy)
             max_payoff_player_1 = player_1_matrix.max()
-            
-            player_2_matrix = np.dot(np.array(df["Payoff Matrix P2"].iloc[i]).T, player_1_strategy)
 
+            player_2_matrix = np.dot(np.array(payoff_matrix_p2).T, player_1_strategy)
             max_payoff_player_2 = player_2_matrix.max()
-            
-            expected_payoff_p1_approx = calculate_expected_payoff(df["Payoff Matrix P1"].iloc[i], player_1_strategy, player_2_strategy)
-            expected_payoff_p2_approx = calculate_expected_payoff(df["Payoff Matrix P2"].iloc[i], player_1_strategy, player_2_strategy)
-            epsilon_p1 =  max_payoff_player_1 - expected_payoff_p1_approx
-            epsilon_p2 =  max_payoff_player_2 - expected_payoff_p2_approx
+
+            expected_payoff_p1_approx = calculate_expected_payoff(payoff_matrix_p1, player_1_strategy, player_2_strategy)
+            expected_payoff_p2_approx = calculate_expected_payoff(payoff_matrix_p2, player_1_strategy, player_2_strategy)
+            epsilon_p1 = max_payoff_player_1 - expected_payoff_p1_approx
+            epsilon_p2 = max_payoff_player_2 - expected_payoff_p2_approx
 
             expected_payoff_p1_approx = round_to_6_decimal_places(expected_payoff_p1_approx)
             epsilon_p1 = round_to_6_decimal_places(epsilon_p1)
             expected_payoff_p2_approx = round_to_6_decimal_places(expected_payoff_p2_approx)
             epsilon_p2 = round_to_6_decimal_places(epsilon_p2)
 
-            if epsilon_p1>0.75 or epsilon_p2>0.75:
-                print(f"Game ID: {df['Game ID'].iloc[i]} performed contradictorily")
+            if epsilon_p1 > 0.75 or epsilon_p2 > 0.75:
+                print(f"Game ID: {game_id} performed contradictorily")
 
-            f.write(f"{df['Game ID'].iloc[i]},{expected_payoff_p1_approx},{epsilon_p1},{expected_payoff_p2_approx},{epsilon_p2},\"{player_1_strategy.tolist()}\",\"{player_2_strategy.tolist()}\",{time_taken}\n")
+            # Append the result to the DataFrame
+            results_df = pd.DataFrame([{
+                "Game_ID": game_id,
+                "Expected_payoff_of_player1_from_approx": expected_payoff_p1_approx,
+                "epsilon_player1": epsilon_p1,
+                "Expected_payoff_of_player2_from_approx": expected_payoff_p2_approx,
+                "epsilon_player2": epsilon_p2,
+                "player_1_strategy": player_1_strategy.tolist(),
+                "player_2_strategy": player_2_strategy.tolist(),
+                "time": time_taken
+            }])
+
+            # Write to CSV immediately
+            results_df.to_csv(output_path, mode='a', header=not pd.io.common.file_exists(output_path), index=False)
+
+            # Free memory explicitly
+            del row, payoff_matrix_p1, payoff_matrix_p2, player_1_strategy, player_2_strategy
+            del player_1_matrix, player_2_matrix, expected_payoff_p1_approx, expected_payoff_p2_approx
+            del epsilon_p1, epsilon_p2
