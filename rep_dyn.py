@@ -60,11 +60,12 @@ def replicator_dynamics(A, B, x_init, y_init, max_iters=1000, learning_rate=0.01
     return x, y
 
 # %%
-DATASET_FILE = "mixed_nash_equilibrium_dataset_nashpy.csv"
+DATASET_FILE = "mixed_nash_equilibrium_dataset.csv"
 data = pd.read_csv(DATASET_FILE)
 
 # %%
 OUTPUT_FILE = "replicator_dynamics_results.csv"
+NUM_GAMES = len(data)
 
 game_ids = []
 exp_payoffs_p1 = []
@@ -101,7 +102,7 @@ def process_game(i):
     return game_id, exp_payoff_p1, exp_payoff_p2, p1_strategy, p2_strategy, epsilon_1, epsilon_2
 
 with ThreadPoolExecutor() as executor:
-    results = list(tqdm(executor.map(process_game, range(len(data))), total=len(data)))
+    results = list(tqdm(executor.map(process_game, range(NUM_GAMES)), total=NUM_GAMES))
 
 for game_id, exp_payoff_p1, exp_payoff_p2, p1_strategy, p2_strategy, epsilon_1, epsilon_2 in results:
     game_ids.append(game_id)
@@ -113,6 +114,13 @@ for game_id, exp_payoff_p1, exp_payoff_p2, p1_strategy, p2_strategy, epsilon_1, 
     epsilon_2_list.append(epsilon_2)
     
 with open(OUTPUT_FILE, "w") as f:
-    f.write("game_id, strategy_p1, strategy_p2, exp_payoff_p1, exp_payoff_p2, epsilon_1, epsilon_2\n")
-    for i in range(len(data)):
-        f.write(f"{game_ids[i]}, {strategy_p1_list[i]}, {strategy_p2_list[i]}, {exp_payoffs_p1[i]}, {exp_payoffs_p2[i]}, {epsilon_1_list[i]}, {epsilon_2_list[i]}\n")
+    f.write("game_id,strategy_p1,strategy_p2,exp_payoff_p1,exp_payoff_p2,epsilon_1,epsilon_2\n")
+    for i in range(NUM_GAMES):
+        # Convert strategies to properly formatted strings
+        strategy_p1 = ",".join(map(str, strategy_p1_list[i]))
+        strategy_p2 = ",".join(map(str, strategy_p2_list[i]))
+        # Write the formatted row
+        f.write(
+            f"{game_ids[i]},\"[{strategy_p1}]\",\"[{strategy_p2}]\","
+            f"{exp_payoffs_p1[i]},{exp_payoffs_p2[i]},{epsilon_1_list[i]},{epsilon_2_list[i]}\n"
+        )
