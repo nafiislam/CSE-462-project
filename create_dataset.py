@@ -46,7 +46,7 @@ output_file = "mixed_nash_equilibrium_dataset_square_matrix.csv"
 header_written = False  # Track if the header has been written
 cnt = 0
 # Parameters for dataset generation
-for i in range(2, 50000+1, 10):
+for i in range(2, 2502+1, 5):
     # for j in range(2, 100+1):
     cnt += 1
     # Number of actions for Player 1
