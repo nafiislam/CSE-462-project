@@ -6,7 +6,6 @@ import ast
 import time
 import sys
 from tqdm import tqdm
-import gc
 import io
 
 np.random.seed(42)
