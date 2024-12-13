@@ -21,6 +21,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor
 
+np.random.seed(42)
+
 # %%
 def replicator_dynamics(A, B, x_init, y_init, max_iters=1000, learning_rate=0.01):
     """
@@ -58,47 +60,59 @@ def replicator_dynamics(A, B, x_init, y_init, max_iters=1000, learning_rate=0.01
     return x, y
 
 # %%
-DATASET_FILE = "mixed_nash_equilibrium_dataset.csv"
-RESULTS_FILE = "nash_results.csv"
+DATASET_FILE = "mixed_nash_equilibrium_dataset_nashpy.csv"
 data = pd.read_csv(DATASET_FILE)
-result = pd.read_csv(RESULTS_FILE)
-
-assert len(data) == len(result)
 
 # %%
 OUTPUT_FILE = "replicator_dynamics_results.csv"
 
+game_ids = []
 exp_payoffs_p1 = []
 exp_payoffs_p2 = []
-best_exp_payoffs_p1 = []
-best_exp_payoffs_p2 = []
+strategy_p1_list = []
+strategy_p2_list = []
+epsilon_1_list = []
+epsilon_2_list = []
 
 def process_game(i):
     game_id = data['Game ID'][i]
-    p1_strategy = np.array(eval(data['Player 1 Strategy'][i]))
-    p2_strategy = np.array(eval(data['Player 2 Strategy'][i]))
     payoff_p1 = np.array(eval(data['Payoff Matrix P1'][i]))
     payoff_p2 = np.array(eval(data['Payoff Matrix P2'][i]))
+    
+    p1_strategy = np.random.rand(payoff_p1.shape[0])
+    p2_strategy = np.random.rand(payoff_p1.shape[1])
+    p1_strategy = p1_strategy / np.sum(p1_strategy)
+    p2_strategy = p2_strategy / np.sum(p2_strategy)
 
     x, y = replicator_dynamics(payoff_p1, payoff_p2, p1_strategy, p2_strategy)
+    p1_strategy = x
+    p2_strategy = y
     exp_payoff_p1 = np.dot(x, np.dot(payoff_p1, y))
     exp_payoff_p2 = np.dot(x, np.dot(payoff_p2, y))
 
-    best_exp_payoff_p1 = result[result['Game ID'] == game_id]['Expected payoff of player1 real'].values[0]
-    best_exp_payoff_p2 = result[result['Game ID'] == game_id]['Expected payoff of player2 real'].values[0]
+    player_1_matrix = np.dot(payoff_p1, p2_strategy)
+    max_payoff_player_1 = player_1_matrix.max()
+    player_2_matrix = np.dot(payoff_p2.T, p1_strategy)
+    max_payoff_player_2 = player_2_matrix.max()
 
-    return exp_payoff_p1, exp_payoff_p2, best_exp_payoff_p1, best_exp_payoff_p2
+    epsilon_1 = max_payoff_player_1 - exp_payoff_p1
+    epsilon_2 = max_payoff_player_2 - exp_payoff_p2
+
+    return game_id, exp_payoff_p1, exp_payoff_p2, p1_strategy, p2_strategy, epsilon_1, epsilon_2
 
 with ThreadPoolExecutor() as executor:
     results = list(tqdm(executor.map(process_game, range(len(data))), total=len(data)))
 
-for exp_payoff_p1, exp_payoff_p2, best_exp_payoff_p1, best_exp_payoff_p2 in results:
+for game_id, exp_payoff_p1, exp_payoff_p2, p1_strategy, p2_strategy, epsilon_1, epsilon_2 in results:
+    game_ids.append(game_id)
     exp_payoffs_p1.append(exp_payoff_p1)
     exp_payoffs_p2.append(exp_payoff_p2)
-    best_exp_payoffs_p1.append(best_exp_payoff_p1)
-    best_exp_payoffs_p2.append(best_exp_payoff_p2)
+    strategy_p1_list.append(p1_strategy)
+    strategy_p2_list.append(p2_strategy)
+    epsilon_1_list.append(epsilon_1)
+    epsilon_2_list.append(epsilon_2)
     
 with open(OUTPUT_FILE, "w") as f:
-    f.write("RD Payoff P1, RD Payoff P2, Best Payoff P1, Best Payoff P2\n")
+    f.write("game_id, strategy_p1, strategy_p2, exp_payoff_p1, exp_payoff_p2, epsilon_1, epsilon_2\n")
     for i in range(len(data)):
-        f.write(f"{exp_payoffs_p1[i]},{exp_payoffs_p2[i]},{best_exp_payoffs_p1[i]},{best_exp_payoffs_p2[i]}\n")
+        f.write(f"{game_ids[i]}, {strategy_p1_list[i]}, {strategy_p2_list[i]}, {exp_payoffs_p1[i]}, {exp_payoffs_p2[i]}, {epsilon_1_list[i]}, {epsilon_2_list[i]}\n")
