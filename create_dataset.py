@@ -42,24 +42,24 @@ def generate_benchmark_dataset(num_actions_player1, num_actions_player2, game_id
 
 
 # Initialize global parameters
-output_file = "mixed_nash_equilibrium_dataset.csv"
+output_file = "mixed_nash_equilibrium_dataset_square_matrix.csv"
 header_written = False  # Track if the header has been written
 cnt = 0
 # Parameters for dataset generation
-for i in range(2, 100+1):
-    for j in range(2, 100+1):
-        cnt += 1
-        # Number of actions for Player 1
-        num_actions_player1 = i
-        # Number of actions for Player 2
-        num_actions_player2 = j
-        # Generate the dataset
-        dataset = generate_benchmark_dataset(num_actions_player1, num_actions_player2, cnt)
-        print(num_actions_player1, num_actions_player2)
-        
-        # Append to CSV file
-        dataset.to_csv(output_file, mode='a', header=not header_written, index=False)
-        header_written = True  # After first write, set header_written to True
-        
-        print("Dataset size:", len(dataset))
-        print("Iteration:", i+1)
+for i in range(2, 50000+1, 10):
+    # for j in range(2, 100+1):
+    cnt += 1
+    # Number of actions for Player 1
+    num_actions_player1 = i
+    # Number of actions for Player 2
+    num_actions_player2 = i
+    # Generate the dataset
+    dataset = generate_benchmark_dataset(num_actions_player1, num_actions_player2, cnt)
+    print(num_actions_player1, num_actions_player2)
+    
+    # Append to CSV file
+    dataset.to_csv(output_file, mode='a', header=not header_written, index=False)
+    header_written = True  # After first write, set header_written to True
+    
+    print("Dataset size:", len(dataset))
+    print("Iteration:", i+1)
